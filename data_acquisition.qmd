@@ -53,7 +53,6 @@ fireballs.head()
 
 ## EDA
 
-
 ```{python}
 
 ```
