@@ -1,0 +1,59 @@
+## Data Collection
+
+```{python}
+import pandas as pd
+import requests
+```
+
+```{python}
+#| eval: false
+
+#include a descriptive header
+headers = {
+    "User-Agent": "STAT386FireballProject/1.0 (ajlapi@byu.edu)"
+}
+
+#query the API for data
+response = requests.get(
+    "https://ssd-api.jpl.nasa.gov/fireball.api",
+    params={"req-loc" : True, "req-alt" : True, "req-vel-comp" : True, "vel-comp": True},
+    headers=headers,
+    timeout=30
+)
+
+#check no HTTP error
+response.raise_for_status()
+#convert json
+data = response.json()
+
+#create pandas DataFrame
+fireballs = pd.DataFrame(data["data"], columns=data["fields"])
+
+#save off raw data as csv
+fireballs.to_csv("data/raw/fireballs_raw.csv", index=False)
+```
+
+## Data Cleaning
+
+```{python}
+#read in raw data
+fireballs = pd.read_csv("data/raw/fireballs_raw.csv")
+
+#convert data column to pandas date object
+fireballs["date"] = pd.to_datetime(fireballs["date"], errors="coerce")
+
+#convert numeric columns
+numeric_columns = ["lat", "lon", "alt", "energy", "impact-e", "vx", "vy", "vz"]
+for column in numeric_columns:
+    if column in fireballs.columns:
+        fireballs[column] = pd.to_numeric(fireballs[column], errors="coerce")
+
+fireballs.head()
+```
+
+## EDA
+
+
+```{python}
+
+```
