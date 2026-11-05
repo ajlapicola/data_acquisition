@@ -1,8 +1,11 @@
 ## Data Collection
 
 ```{python}
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import requests
+import seaborn as sns
 ```
 
 ```{python}
@@ -48,11 +51,102 @@ for column in numeric_columns:
     if column in fireballs.columns:
         fireballs[column] = pd.to_numeric(fireballs[column], errors="coerce")
 
+#create speed column by velocity components
+fireballs["speed"] = np.sqrt(
+    fireballs[["vx", "vy", "vz"]].pow(2).sum(axis=1, min_count=3)
+)
+
 fireballs.head()
 ```
 
 ## EDA
 
-```{python}
+### Summary Table
 
+```{python}
+#variables of interest
+eda_vars = ["energy", "alt", "speed"]
+
+#summary statistics
+summary = fireballs[eda_vars].agg(
+    ["count", "median", "min", "max"]
+).T
+
+#generate summaries
+summary["missing"] = fireballs[eda_vars].isna().sum()
+summary["IQR"] = (
+    fireballs[eda_vars].quantile(0.75)
+    - fireballs[eda_vars].quantile(0.25)
+)
+
+#create dataframe and display info
+summary = summary[["count", "missing", "median", "IQR", "min", "max"]]
+
+print(f"Rows: {len(fireballs)}")
+print(f"Columns: {len(fireballs.columns)}")
+
+summary
+```
+
+### Radiated Energy Distribution
+
+```{python}
+#use log scale for energy
+bins = np.logspace(
+    np.log10(fireballs["energy"].min()),
+    np.log10(fireballs["energy"].max()),
+    25,
+)
+
+#histogram to display overall energy distribution
+sns.histplot(data=fireballs, x="energy", bins=bins, edgecolor="white")
+
+plt.xscale("log")
+plt.xlabel("Total radiated energy (10^10 joules, log scale)")
+plt.ylabel("Number of fireballs")
+plt.title("Distribution of Fireball Radiated Energy")
+plt.show()
+```
+
+### Associative scatter plots
+
+```{python}
+#use log scale for energy
+alt_data = fireballs[["alt", "energy"]].copy()
+alt_data["log_energy"] = np.log10(alt_data["energy"])
+
+#scatterplot with trendline to highlight relationship
+sns.regplot(
+    data=alt_data,
+    x="alt",
+    y="log_energy",
+    ci=None,
+    scatter_kws={"alpha": 0.6},
+)
+
+plt.xlabel("Altitude at peak brightness (km)")
+plt.ylabel("log10 radiated energy (10^10 joules)")
+plt.title("Altitude and Radiated Energy")
+plt.show()
+```
+
+
+```{python}
+#use log scale for energy
+speed_data = fireballs[["speed", "energy"]].copy()
+speed_data["log_energy"] = np.log10(speed_data["energy"])
+
+#scatterplot with trendline to highlight relationship
+sns.regplot(
+    data=speed_data,
+    x="speed",
+    y="log_energy",
+    ci=None,
+    scatter_kws={"alpha": 0.6},
+)
+
+plt.xlabel("Calculated entry speed (km/s)")
+plt.ylabel("log10 radiated energy (10^10 joules)")
+plt.title("Entry Speed and Radiated Energy")
+plt.show()
 ```
